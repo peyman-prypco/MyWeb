@@ -1,241 +1,59 @@
+<!-- redirect.html -->
+<!doctype html>
 <html>
-   <head>
-      <script src="https://cdn.leantech.me/link/loader/prod/ae/latest/lean-link-loader.min.js"></script>
-   </head>
-   <body>
-	   Redirection URL: <input type="text" id="redirection_url" value="https://prypco.com/Blocks/" size=40>
-      <p>	
-		  1. Create Customer Entity<br/>
-         User ID: <input type="text" id="app_user_id" value="2c9d8774-fc05-4ba8-a098-a113d2bb6105" size=40>
-         <br/>
-         Lean Customer ID: <input type="text" id="customer_id" value="f3799d9e-5a4f-4179-ad4b-d52cb9ede388" size=40>
-         <br/>
-         <button onclick="createCustomer()">Create Customer</button>
-      </p>
-      <script>	
-         function createCustomer() 
-         	{
-         		var guid = "10000000-1000-4000-8000-100000000000".replace(/[018]/g, c =>
-         	    (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
-         	  );
-           
-         	document.getElementById("app_user_id").value = guid;
-         	  
-         	const myHeaders = new Headers();
-         	myHeaders.append("Content-Type", "application/json");
-         	myHeaders.append("lean-app-token", "3c93a8b1-577e-4161-bf30-45f205fcd451");
-         
-         	const raw = JSON.stringify({
-         		"app_user_id": guid
-         	});
-         
-         	const requestOptions = {
-         	  method: "POST",
-         	  headers: myHeaders,
-         	  body: raw,
-         	  redirect: "follow"
-         	};
-         
-         	fetch("https://sandbox.leantech.me/customers/v1/", requestOptions)
-         	.then(response => response.json())
-             .then(data => document.getElementById("customer_id").value = data.customer_id)
-         	.catch((error) => console.error(error));
-          
-           }
-      </script>
-		   <p>	
-		      2. Get Access Token for Customer<br/>
-		      Access Token: <input type="text" id="access_token" value="eyJraWQiOiI5YjFkYWJmOS05NWFhLTQwNDAtOGQwYy04MDQ0Y2QzZWNmZWQiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiIzYzkzYThiMS01NzdlLTQxNjEtYmYzMC00NWYyMDVmY2Q0NTEiLCJhdWQiOiJodHRwczovL2xpbmsuc2FuZGJveC5sZWFudGVjaC5tZSIsIm5iZiI6MTc2OTc2MTIyMCwic2NvcGUiOlsiY3VzdG9tZXIucmVhZCIsImJlbmVmaWNpYXJ5LndyaXRlIiwicGF5bWVudC53cml0ZSIsInBheW1lbnQucmVhZCIsImRlc3RpbmF0aW9uLnJlYWQiLCJjb25uZWN0LndyaXRlIiwiY29ubmVjdC5yZWFkIiwiYXBwbGljYXRpb24ucmVhZCIsImJhbmsucmVhZCIsImtleS5yZWFkIl0sImlzcyI6Imh0dHBzOi8vYXV0aC5zYW5kYm94LmxlYW50ZWNoLm1lIiwiY3VzdG9tZXJzIjpbeyJpZCI6ImYzNzk5ZDllLTVhNGYtNDE3OS1hZDRiLWQ1MmNiOWVkZTM4OCJ9XSwiZXhwIjoxNzY5NzY0ODIwLCJpYXQiOjE3Njk3NjEyMjAsImp0aSI6IjJhZjc5ZTRkLTY3M2EtNGE4Ny1iNjkwLThlZjg1MDcwNmFhMCIsImFwcGxpY2F0aW9ucyI6W3siaWQiOiIzYzkzYThiMS01NzdlLTQxNjEtYmYzMC00NWYyMDVmY2Q0NTEifV19.jyca_NV86S4P_GFZvpaBygyLMC-2HOGvZZ04rpN8iLDq4rwRfHSOrpb1oAPOQb-grOJjcKBOFV0vhl0ZxJpXQ9HZApu4Z3cG2BGdOSfpHzhNQq_b_5_58F04iHcwzoLoEOK_IteSlB-OgUeEe4Y0xx2xP-fiD_NQxwFimBa_fIw91GNPehyRxhZ5tP5f9nKnmhp7FMyafEoGLn9IbsVBnMTTICoYU6Vp9bYELJETj-dC66Bg4syQDJOoMKBHyGruRvkhgpcyTXbCq-TF2c1kXXke0Jh4UCUR6KI3v8f5GcyxWEAhRu6aN8Dx3Sk7eEvziCQHyMgOveMXlaUIyLJVJw" size="90">
-		      <br/>
-		      <button onclick="getAccessToken()">Get Access Token</button>
-		   </p>
-		   <script>
-		     function getAccessToken() {
-		       const customerId = document.getElementById("customer_id").value;
-		       if (!customerId) {
-		         alert("Customer ID is missing.");
-		         return;
-		       }
+<head>
+  <meta charset="utf-8" />
+  <title>Redirect</title>
+  <!-- Lean Link SDK (keep same CDN you're using today) -->
+  <script src="https://cdn.leantech.me/link-sdk/latest/lean.min.js"></script>
+  <style>
+    /* Hide everything visually */
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: transparent; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <!-- Nothing visible -->
+  <div class="hidden" id="status">Processing…</div>
 
-		       const formData = new URLSearchParams();
-		       formData.append("client_id", "3c93a8b1-577e-4161-bf30-45f205fcd451");
-		       formData.append("client_secret", "33633933613862312d353737652d3431");
-		       formData.append("grant_type", "client_credentials");
-		       formData.append("scope", `customer.${customerId}`);
+  <script>
+    (function () {
+      // ✅ Don’t log anything, don’t render anything
+      const params = new URLSearchParams(window.location.search);
 
-		       fetch("https://auth.sandbox.leantech.me/oauth2/token", {
-		         method: "POST",
-		         headers: {
-		           "Content-Type": "application/x-www-form-urlencoded"
-		         },
-		         body: formData
-		       })
-		       .then(response => response.json())
-		       .then(data => {
-		         if (data.access_token) {
-		           document.getElementById("access_token").value = data.access_token;
-		           console.log("Access token retrieved:", data.access_token);
-		         } else {
-		           console.error("Access token not found in response", data);
-		           alert("Failed to retrieve token.");
-		         }
-		       })
-		       .catch(err => {
-		         console.error("Error fetching access token", err);
-		         alert("Error fetching token. See console.");
-		       });
-		     }
-		   </script>
-      <p>	
-		  3. Create Payment Destination (Prypco)<br/>	
-         Destination ID: <input type="text" id="destination_id" value="a8b0e852-1ed6-4cd0-9b35-a2c799f29db6" size=40>
-         <br/>
-         <button onclick="createDestination()">Create Destination</button>
-      </p>
-      <script>	
-         function createDestination()
-         {
-         	const myHeaders = new Headers();
-         	myHeaders.append("Content-Type", "application/json");
-         	myHeaders.append("lean-app-token", "3c93a8b1-577e-4161-bf30-45f205fcd451");
-         
-			const raw = JSON.stringify({
-			  display_name: "Acme USD Account",
-			  name: "Acme Inc",
-			  country: "ARE",
-			  city: "Dubai",
-			  address: "123 Fake St",
-			  iban: "AE260260001008223921001",
-			  bank_type: "CORPORATE",
-			  government_identifier: {
-			    type: "TRADE_LICENSE_NUMBER",
-			    value: "XX-1234567"
-			  }
-			});
-         
-         	const requestOptions = {
-         	  method: "POST",
-         	  headers: myHeaders,
-         	  body: raw,
-         	  redirect: "follow"
-         	};
-         
-         	fetch("https://sandbox.leantech.me/payments/v1/destinations", requestOptions)
-         	  .then((response) => response.json())
-         	  .then((data) =>  document.getElementById("destination_id").value = data.id)
-         	  .catch((error) => console.error(error));
-         }
-         
-      </script>
-      <p> 
-		  4. Create a Benefeciery<br/>
-         <button onclick="leanConnect()">Creating the Payment Source</button>
-		 <br/>
-		 Credentails for adding a new beneficiary:<br/>
-		 eleanoragutmann<br/>
-		 kewuokXGN
-      </p>
-      <script>
-         function leanConnect() {
-           Lean.connect({
-             app_token: "3c93a8b1-577e-4161-bf30-45f205fcd451",
-             permissions: ["payments"],
-             customer_id: document.getElementById("customer_id").value,
-             payment_destination_id: document.getElementById("destination_id").value,
-             sandbox: "true",
-			 fail_redirect_url: document.getElementById("redirection_url").value,
-			 success_redirect_url: document.getElementById("redirection_url").value,
-			 account_type: "PERSONAL"     
-           })
-         }
-      </script>		 
-		 <hr/>
-      <p>
-         5. Initiate Payment<br/>	
-         Payment Intent ID: <input type="text" id="payment_intent_id" value="" size=40>
-         <br/>
-         <button onclick="createPayment()">Create Payment Intent</button>
-         <br/>
-         NOTE: For every payment there should be a new payment intenet id
-      </p>
-      <script>
-         function createPayment()
-         {
-         	const myHeaders = new Headers();
-         	myHeaders.append("Content-Type", "application/json");
-         	myHeaders.append("lean-app-token", "3c93a8b1-577e-4161-bf30-45f205fcd451");
-         
-         	const raw = JSON.stringify({
-         	  "amount": 1000,
-         	  "currency": "AED",
-         	  "payment_destination_id": document.getElementById("destination_id").value,
-         	  "customer_id": document.getElementById("customer_id").value,
-  			  "purpose_code": "FIS",
-         	  "description": "YOUR_TRANSACTION_REFERENCE"
-         	});
-         
-         	const requestOptions = {
-         	  method: "POST",
-         	  headers: myHeaders,
-         	  body: raw,
-         	  redirect: "follow"
-         	};
-         
-         	fetch("https://sandbox.leantech.me/payments/v1/intents", requestOptions)
-         	  .then((response) => response.json())
-         	  .then((data) =>  document.getElementById("payment_intent_id").value = data.payment_intent_id)
-         	  .catch((error) => console.error(error));
-         }
-         
-      </script>		          
-      <p>
-         6. Pay by Lean<br/>
-         <button onclick="leanPay()">Pay by Lean</button>
-      </p>
-      <script>
-         function leanPay()
-         {
-         	Lean.pay({
-				access_token: document.getElementById("access_token").value,
-         	    app_token: "3c93a8b1-577e-4161-bf30-45f205fcd451",
-         	    payment_intent_id: document.getElementById("payment_intent_id").value,
-         	    show_balances: "false", 
-         	    sandbox: "true",
-				fail_redirect_url: document.getElementById("redirection_url").value,
-				success_redirect_url: document.getElementById("redirection_url").value     	    
-         	});
-         }
-         
-         
-      </script>
-         <p>
-            7. Capturing Redirect<br/>
-            <button onclick="tryCaptureRedirect()">Capturing Redirect</button>
-         </p>
-		 <script>
-		   function tryCaptureRedirect() {
-		     const qp = new URLSearchParams(window.location.search);
+      // Helper: read a required param
+      function getRequired(name) {
+        const v = params.get(name);
+        if (!v) throw new Error("Missing query param: " + name);
+        return v;
+      }
 
-		     // Only proceed if we actually returned from Lean/bank redirect
-		     const customerId = qp.get("customer_id");
-		     if (!customerId) return;
+      // 🔐 NOTE: This hides from the PAGE, not from DevTools.
+      const APP_TOKEN = "3c93a8b1-577e-4161-bf30-45f205fcd451";                 // ok to be public
+      const CUSTOMER_ACCESS_TOKEN = "eyJraWQiOiI5YjFkYWJmOS05NWFhLTQwNDAtOGQwYy04MDQ0Y2QzZWNmZWQiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiIzYzkzYThiMS01NzdlLTQxNjEtYmYzMC00NWYyMDVmY2Q0NTEiLCJhdWQiOiJodHRwczovL2xpbmsuc2FuZGJveC5sZWFudGVjaC5tZSIsIm5iZiI6MTc2OTc2OTg2OSwic2NvcGUiOlsiY3VzdG9tZXIucmVhZCIsImJlbmVmaWNpYXJ5LndyaXRlIiwicGF5bWVudC53cml0ZSIsInBheW1lbnQucmVhZCIsImRlc3RpbmF0aW9uLnJlYWQiLCJjb25uZWN0LndyaXRlIiwiY29ubmVjdC5yZWFkIiwiYXBwbGljYXRpb24ucmVhZCIsImJhbmsucmVhZCIsImtleS5yZWFkIl0sImlzcyI6Imh0dHBzOi8vYXV0aC5zYW5kYm94LmxlYW50ZWNoLm1lIiwiY3VzdG9tZXJzIjpbeyJpZCI6ImYzNzk5ZDllLTVhNGYtNDE3OS1hZDRiLWQ1MmNiOWVkZTM4OCJ9XSwiZXhwIjoxNzY5NzczNDY5LCJpYXQiOjE3Njk3Njk4NjksImp0aSI6IjlkNTdmMDlkLTQ0NmItNDZiMS1iNGEzLWVmNmQ1Mjc4NjE3YiIsImFwcGxpY2F0aW9ucyI6W3siaWQiOiIzYzkzYThiMS01NzdlLTQxNjEtYmYzMC00NWYyMDVmY2Q0NTEifV19.hHLpTkL24_StkuNkOzGmbXv6fOITcOC56vyI_j-dWNOk19JNokXI0USjNTYUfSs_laerZy5xNsCBL76gvVNZsh687POff-i5uyMX61ACtDIiLjYZZYf4qw5Hf098vO8G8C2g9UkbGMpESs0VpUgByCBJFd_5Vyaokvwc2u3tYYKQGJ6H-LQgk7DD0jqcGSEWSIFGF8H9Zt7dsugPj1wX0kaornWPVelCMi1d1MykY552Y1bYXAA6MT3IIWes5XqOqNWmDCPQVUYbJa8HZYPWvbGpOiru7RlWZm8ym4bmJsUdGnbVJps0iLPP-rT29yOK17Eiip8qnX8dtoEaAog7zQ"; // ⚠️ don’t use real prod tokens here
 
-		     Lean.captureRedirect({
-		       app_token: "3c93a8b1-577e-4161-bf30-45f205fcd451",
-		       sandbox: true,
-		       access_token: document.getElementById("access_token").value,
+      const payload = {
+        app_token: APP_TOKEN,
+        bank_identifier: getRequired("bank_identifier"),
+        consent_attempt_id: getRequired("consent_attempt_id"),
+        customer_id: getRequired("customer_id"),
+        granular_status_code: params.get("granular_status_code") || undefined,
+        status_additional_info: params.get("status_additional_info") || undefined,
+        sandbox: true,
+        access_token: CUSTOMER_ACCESS_TOKEN
+      };
 
-		       bank_identifier: qp.get("bank_identifier"),
-		       //consent_id: qp.get("consent_id"),
-		       consent_attempt_id: qp.get("consent_attempt_id"),
-		       customer_id: customerId,
-		       //granular_status_code: qp.get("granular_status_code"),
-		       //status_additional_info: qp.get("status_additional_info"),
-		     });
-		   }
-
-		   window.addEventListener("load", tryCaptureRedirect);
-		 </script>
-		   https://prypco.com/?bank_identifier=&customer_id=f3799d9e-5a4f-4179-ad4b-d52cb9ede388&consent_attempt_id=7c3c0f6a-a321-4633-bf82-e41cdb973c43
-   </body>
+      // Call captureRedirect
+      Lean.captureRedirect(payload)
+        .then(function () {
+          // Optionally: silently navigate somewhere after success
+          // window.location.replace("/success.html");
+        })
+        .catch(function () {
+          // Optionally: silently navigate somewhere after failure
+          // window.location.replace("/failure.html");
+        });
+    })();
+  </script>
+</body>
 </html>
