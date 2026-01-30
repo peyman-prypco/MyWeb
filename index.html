@@ -17,43 +17,28 @@
   <div class="hidden" id="status">Processing…</div>
 
   <script>
-    (function () {
-      // ✅ Don’t log anything, don’t render anything
-      const params = new URLSearchParams(window.location.search);
+		   function tryCaptureRedirect() {
+		     const qp = new URLSearchParams(window.location.search);
 
-      // Helper: read a required param
-      function getRequired(name) {
-        const v = params.get(name);
-        if (!v) throw new Error("Missing query param: " + name);
-        return v;
-      }
+		     // Only proceed if we actually returned from Lean/bank redirect
+		     const customerId = qp.get("customer_id");
+		     if (!customerId) return;
 
-      // 🔐 NOTE: This hides from the PAGE, not from DevTools.
-      const APP_TOKEN = "3c93a8b1-577e-4161-bf30-45f205fcd451";                 // ok to be public
-      const CUSTOMER_ACCESS_TOKEN = "eyJraWQiOiI5YjFkYWJmOS05NWFhLTQwNDAtOGQwYy04MDQ0Y2QzZWNmZWQiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiIzYzkzYThiMS01NzdlLTQxNjEtYmYzMC00NWYyMDVmY2Q0NTEiLCJhdWQiOiJodHRwczovL2xpbmsuc2FuZGJveC5sZWFudGVjaC5tZSIsIm5iZiI6MTc2OTc2OTg2OSwic2NvcGUiOlsiY3VzdG9tZXIucmVhZCIsImJlbmVmaWNpYXJ5LndyaXRlIiwicGF5bWVudC53cml0ZSIsInBheW1lbnQucmVhZCIsImRlc3RpbmF0aW9uLnJlYWQiLCJjb25uZWN0LndyaXRlIiwiY29ubmVjdC5yZWFkIiwiYXBwbGljYXRpb24ucmVhZCIsImJhbmsucmVhZCIsImtleS5yZWFkIl0sImlzcyI6Imh0dHBzOi8vYXV0aC5zYW5kYm94LmxlYW50ZWNoLm1lIiwiY3VzdG9tZXJzIjpbeyJpZCI6ImYzNzk5ZDllLTVhNGYtNDE3OS1hZDRiLWQ1MmNiOWVkZTM4OCJ9XSwiZXhwIjoxNzY5NzczNDY5LCJpYXQiOjE3Njk3Njk4NjksImp0aSI6IjlkNTdmMDlkLTQ0NmItNDZiMS1iNGEzLWVmNmQ1Mjc4NjE3YiIsImFwcGxpY2F0aW9ucyI6W3siaWQiOiIzYzkzYThiMS01NzdlLTQxNjEtYmYzMC00NWYyMDVmY2Q0NTEifV19.hHLpTkL24_StkuNkOzGmbXv6fOITcOC56vyI_j-dWNOk19JNokXI0USjNTYUfSs_laerZy5xNsCBL76gvVNZsh687POff-i5uyMX61ACtDIiLjYZZYf4qw5Hf098vO8G8C2g9UkbGMpESs0VpUgByCBJFd_5Vyaokvwc2u3tYYKQGJ6H-LQgk7DD0jqcGSEWSIFGF8H9Zt7dsugPj1wX0kaornWPVelCMi1d1MykY552Y1bYXAA6MT3IIWes5XqOqNWmDCPQVUYbJa8HZYPWvbGpOiru7RlWZm8ym4bmJsUdGnbVJps0iLPP-rT29yOK17Eiip8qnX8dtoEaAog7zQ"; // ⚠️ don’t use real prod tokens here
+		     Lean.captureRedirect({
+		       app_token: "3c93a8b1-577e-4161-bf30-45f205fcd451",
+		       sandbox: true,
+		       access_token: document.getElementById("access_token").value,
 
-      const payload = {
-        app_token: APP_TOKEN,
-        bank_identifier: getRequired("bank_identifier"),
-        consent_attempt_id: getRequired("consent_attempt_id"),
-        customer_id: getRequired("customer_id"),
-        granular_status_code: params.get("granular_status_code") || undefined,
-        status_additional_info: params.get("status_additional_info") || undefined,
-        sandbox: true,
-        access_token: CUSTOMER_ACCESS_TOKEN
-      };
+		       bank_identifier: qp.get("bank_identifier"),
+		       //consent_id: qp.get("consent_id"),
+		       consent_attempt_id: qp.get("consent_attempt_id"),
+		       customer_id: customerId,
+		       //granular_status_code: qp.get("granular_status_code"),
+		       //status_additional_info: qp.get("status_additional_info"),
+		     });
+		   }
 
-      // Call captureRedirect
-      Lean.captureRedirect(payload)
-        .then(function () {
-          // Optionally: silently navigate somewhere after success
-          // window.location.replace("/success.html");
-        })
-        .catch(function () {
-          // Optionally: silently navigate somewhere after failure
-          // window.location.replace("/failure.html");
-        });
-    })();
-  </script>
+		   window.addEventListener("load", tryCaptureRedirect);
+		 </script>
 </body>
 </html>
