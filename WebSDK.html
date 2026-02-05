@@ -76,7 +76,7 @@
       <div class="grid">
         <div>
           <label for="clientKey">Client Key (Mandatory)</label>
-          <input id="clientKey" placeholder="Paste your Client Key from IDWise Studio (API Keys → Client Key)" autocomplete="off" value="QmFzaWMgVkMweE5EZzFORGxqT0Mxa00ySXlMVFJpTmpndE9ETmhaQzB3WldZeU56bGlaakV4TTJNNlNXaFJTbFEzTTJ4RlExWjRUMk5YUjJveGRFZzBjbk51ZDNCbWIwMHlaV2xOTUhWblFXMWtVZz09" />
+          <input id="clientKey" placeholder="Paste your Client Key from IDWise Studio (API Keys → Client Key)" autocomplete="off" />
           <div class="hint">
             This is the <b>Client Key</b> used by WebSDK. It is provided/generated in IDWise Studio (Admin Portal → API Keys → Client Key).
           </div>
@@ -109,15 +109,20 @@
       <select id="flowSelect">
         <option value="">Select a flow…</option>
         <!-- ✅ Replace the below with your FULL IDs (not truncated) -->
-        <option value="cfbb44a9-dda2-4b29-be2f-b29a3331497b">Other Documents</option>
-        <option value="00e001f9-3ece-4fb0-88d1-518eff2b871f">Passport</option>
-        <option value="f69f47ff-4ca7-482b-93c7-0874519ec527">Passport &amp; EID</option>        
-      </select>      
+        <option value="cfbb44a9-dda2-4b29-be2f-xxxxxxxxxxxx">Other Documents</option>
+        <option value="00e001f9-3ece-4fb0-88d1-xxxxxxxxxxxx">Passport</option>
+        <option value="f69f47ff-4ca7-482b-93c7-xxxxxxxxxxxx">Passport &amp; EID</option>
+        <option value="__custom__">Custom…</option>
+      </select>
+      <input id="flowCustom" placeholder="Paste custom Flow ID (UUID)" style="display:none; margin-top:10px;" autocomplete="off" />
+      <div class="hint">
+        Per docs, <b>flowId</b> is mandatory for startJourney/resumeJourney.
+      </div>
     </div>
 
     <div>
       <label for="referenceNo">referenceNo (Optional but recommended)</label>
-      <input id="referenceNo" placeholder="Your internal user id (e.g., customerId)" autocomplete="off" value="123456789" />
+      <input id="referenceNo" placeholder="Your internal user id (e.g., customerId)" autocomplete="off" />
       <div class="hint">
         This links the journey to your system for later reconciliation.
       </div>
@@ -134,9 +139,14 @@
     <div>
       <label>Applicant Details (Optional)</label>
       <textarea id="applicantDetails" spellcheck="false">
+```
+
 {
-"full_name": "Test User",
-"nationality_code": "IRN"
+"full_name": "John Doe",
+"birth_date": "1995-05-06",
+"sex": "male",
+"address": "221 Sample Road, Placeholder House, Testford, London, T35 7AB, United Kingdom",
+"nationality_code": "GBR"
 } </textarea> <div class="hint">
 Set to <b>null</b> if you don’t want to pass details. Supported keys per docs. </div> </div> </div>
 
@@ -228,4 +238,190 @@ Set to <b>null</b> if you don’t want to pass details. Supported keys per docs.
 
     // 1) Initialize (per docs)
     $("btnInit").addEventListener("click", async () => {
-      if (
+      if (!preflightChecks()) return;
+
+      const clientKey = $("clientKey").value.trim();
+      const locale = $("locale").value;
+      const theme = $("theme").value;
+
+      if (!clientKey) {
+        alert("Client Key is required.");
+        return;
+      }
+
+      try {
+        log("Initializing IDWise…");
+        setState("Initializing…");
+
+        idwise = await IDWise.initialize({ clientKey, locale, theme });
+
+        setState("Initialized ✅");
+        log("✅ Initialized. Session ready.");
+      } catch (err) {
+        setState("Init failed ❌");
+        log("❌ Initialize failed:", normalizeError(err));
+        alert("Initialize failed. Check the log for details.");
+      }
+    });
+
+    // 2) Start Journey (per docs)
+    $("btnStart").addEventListener("click", async () => {
+      if (!preflightChecks()) return;
+
+      const flowId = getFlowId();
+      const referenceNo = $("referenceNo").value.trim() || undefined;
+
+      if (!flowId) {
+        alert("flowId is required (select a Journey Flow).");
+        return;
+      }
+
+      try {
+        if (!idwise) {
+          alert("Please click Initialize first.");
+          return;
+        }
+
+        // Per docs: cleanup before starting a new journey within same page/session
+        log("Calling cleanup() before starting a new journey (recommended)...");
+        try { await idwise.cleanup(); } catch { /* ignore */ }
+
+        const applicantDetails = getApplicantDetails();
+
+        log("Starting journey…");
+        setState("Journey running…");
+
+        idwise.startJourney({
+          flowId,
+          mount: "#idwise-mount",
+          applicantDetails,
+          referenceNo,
+          eventHandlers: {
+            onJourneyStarted: (details) => {
+              log("✅ onJourneyStarted:", details);
+              // Tip: store details.journeyId to DB if you want resume support
+              if (details?.journeyId) $("journeyId").value = details.journeyId;
+            },
+            onJourneyFinished: (details) => {
+              log("✅ onJourneyFinished:", details);
+              setState("Initialized ✅ (journey finished)");
+            },
+            onJourneyCancelled: (details) => {
+              log("⚠️ onJourneyCancelled:", details);
+              setState("Initialized ✅ (journey cancelled)");
+            },
+            onError: (details) => {
+              log("❌ onError:", details);
+              setState("Initialized ✅ (error)");
+            }
+          }
+        });
+
+      } catch (err) {
+        log("❌ startJourney exception:", normalizeError(err));
+        alert("Start Journey failed. Check the log for details.");
+      }
+    });
+
+    // Resume Journey (per docs)
+    $("btnResume").addEventListener("click", async () => {
+      if (!preflightChecks()) return;
+
+      const flowId = getFlowId();
+      const journeyId = $("journeyId").value.trim();
+
+      if (!flowId) {
+        alert("flowId is required (select a Journey Flow).");
+        return;
+      }
+      if (!journeyId) {
+        alert("journeyId is required to resume.");
+        return;
+      }
+
+      try {
+        if (!idwise) {
+          alert("Please click Initialize first.");
+          return;
+        }
+
+        log("Calling cleanup() before resuming (recommended)...");
+        try { await idwise.cleanup(); } catch { /* ignore */ }
+
+        log("Resuming journey…");
+        setState("Journey running…");
+
+        idwise.resumeJourney({
+          flowId,
+          mount: "#idwise-mount",
+          journeyId,
+          eventHandlers: {
+            onJourneyResumed: (details) => {
+              log("✅ onJourneyResumed:", details);
+            },
+            onJourneyFinished: (details) => {
+              log("✅ onJourneyFinished:", details);
+              setState("Initialized ✅ (journey finished)");
+            },
+            onJourneyCancelled: (details) => {
+              log("⚠️ onJourneyCancelled:", details);
+              setState("Initialized ✅ (journey cancelled)");
+            },
+            onError: (details) => {
+              log("❌ onError:", details);
+              setState("Initialized ✅ (error)");
+            }
+          }
+        });
+
+      } catch (err) {
+        log("❌ resumeJourney exception:", normalizeError(err));
+        alert("Resume Journey failed. Check the log for details.");
+      }
+    });
+
+    // Cleanup (Cancel) per docs
+    $("btnCleanup").addEventListener("click", async () => {
+      try {
+        if (!idwise) {
+          log("cleanup(): session not initialized yet.");
+          return;
+        }
+        log("Calling cleanup()…");
+        await idwise.cleanup();
+        log("✅ cleanup() completed. UI removed / journey cancelled.");
+        setState("Initialized ✅ (clean)");
+      } catch (err) {
+        log("❌ cleanup() failed:", normalizeError(err));
+      }
+    });
+
+    $("btnClearLog").addEventListener("click", () => {
+      logEl.textContent = "Log:\n";
+    });
+
+    function normalizeError(err) {
+      // IDWise docs show errors can be objects with code/message/requestId
+      if (!err) return { message: "Unknown error (empty)" };
+      if (typeof err === "string") return { message: err };
+      return {
+        code: err.code,
+        message: err.message || String(err),
+        requestId: err.requestId,
+        raw: err
+      };
+    }
+
+    // Auto-log environment
+    window.addEventListener("load", () => {
+      log("Page loaded.");
+      log("SDK present:", { IDWise: !!window.IDWise });
+      log("Origin:", { origin: window.location.origin, protocol: window.location.protocol });
+      if (window.location.protocol !== "https:" && window.location.hostname !== "localhost") {
+        log("⚠️ Not running on HTTPS. Some browsers/features may block camera access.", { protocol: window.location.protocol });
+      }
+    });
+  </script>
+
+</body>
+</html>
